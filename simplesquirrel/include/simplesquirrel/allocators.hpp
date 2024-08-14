@@ -58,7 +58,7 @@ namespace ssq {
             int off = nparams;
 
             FuncPtr<T*(Args...)>* funcPtr;
-            sq_getuserdata(vm, -1, reinterpret_cast<void**>(&funcPtr), nullptr);
+            SQ_PTRS->sq_getuserdata(vm, -1, reinterpret_cast<void**>(&funcPtr), nullptr);
 
             T* p = callConstructor<T, Args...>(vm, funcPtr, index_range<0, sizeof...(Args)>());
             SQ_PTRS->sq_setinstanceup(vm, -2 -off, p);
@@ -76,7 +76,7 @@ namespace ssq {
             int off = nparams;
 
             FuncPtr<T*(Args...)>* funcPtr;
-            sq_getuserdata(vm, -1, reinterpret_cast<void**>(&funcPtr), nullptr);
+            SQ_PTRS->sq_getuserdata(vm, -1, reinterpret_cast<void**>(&funcPtr), nullptr);
 
             T* p = callConstructor<T, Args...>(vm, funcPtr, index_range<0, sizeof...(Args)>());
             SQ_PTRS->sq_setinstanceup(vm, -2 -off, p);

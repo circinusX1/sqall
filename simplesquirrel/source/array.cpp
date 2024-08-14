@@ -11,19 +11,23 @@ namespace ssq {
         SQ_PTRS->sq_pop(vm,1); // Pop array
     }
 
+    Array::Array(HSQOBJECT ho, HSQUIRRELVM vm):Object(ho, vm){
+
+    }
+
     Array::Array(const Object& object):Object(object) {
         if (object.getType() != Type::ARRAY) throw TypeException("bad cast", "ARRAY", object.getTypeStr());
     }
 
     Array::Array(const Array& other):Object(other) {
-            
+
     }
 
     Array::Array(Array&& other) NOEXCEPT :Object(std::forward<Array>(other)) {
-            
+
     }
 
-    size_t Array::size() {
+    size_t Array::size()const {
         SQ_PTRS->sq_pushobject(vm, obj);
         SQInteger s = SQ_PTRS->sq_getsize(vm, -1);
         SQ_PTRS->sq_pop(vm, 1);

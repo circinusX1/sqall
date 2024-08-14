@@ -124,7 +124,7 @@ namespace ssq {
             SQ_PTRS->sq_pop(vm,1); // pop table
         }
         template<typename T>
-        inline T get(const char* name) {
+        inline T get(const char* name) const{
             return find(name).to<T>();
         }
         size_t size();

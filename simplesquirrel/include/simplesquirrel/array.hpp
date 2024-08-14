@@ -18,6 +18,13 @@ namespace ssq {
         * @brief Constructs empty array
         */
         Array(HSQUIRRELVM vm, size_t len = 0);
+
+
+        /**
+        * @brief Constructs array from Object
+        */
+        Array(HSQOBJECT o, HSQUIRRELVM vm);
+
         /**
         * @brief Destructor
         */
@@ -57,7 +64,7 @@ namespace ssq {
         /**
         * @brief Returns the size of the array
         */
-        size_t size();
+        size_t size()const;
         /**
         * @brief Pushes an element to the back of the array
         */
@@ -105,7 +112,7 @@ namespace ssq {
         * @throws TypeException if the index is out of bounds or element cannot be returned
         */
         template<typename T>
-        T get(size_t index) {
+        T get(size_t index)const {
             SQ_PTRS->sq_pushobject(vm, obj);
             auto s = static_cast<size_t>(SQ_PTRS->sq_getsize(vm, -1));
             if(index >= s) {

@@ -122,7 +122,7 @@ namespace ssq {
             SQ_PTRS->sq_setparamscheck(vm, nparams + 1, params);
             SQ_PTRS->sq_newslot(vm, -3, false); // Add the constructor method
 
-            sq_newslot(vm, -3, SQFalse); // Add the class
+            SQ_PTRS->sq_newslot(vm, -3, SQFalse); // Add the class
 
             return clsObj;
         }

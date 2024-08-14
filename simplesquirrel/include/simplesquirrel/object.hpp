@@ -77,6 +77,15 @@ namespace ssq {
         /**
         * @brief Checks if the object is empty
         */
+
+        /**
+        * Object from HSQOBJECT
+        */
+        Object(HSQOBJECT ho, HSQUIRRELVM v) : vm(v), obj(ho), weak(true) {
+            SQ_PTRS->sq_addref(vm, &obj);
+        }
+
+
         bool isEmpty() const;
         /**
         * @brief Returns raw Squirrel object reference
@@ -215,7 +224,77 @@ namespace ssq {
         HSQUIRRELVM vm;
         HSQOBJECT obj;
         bool weak;
+
+public:
+    struct iterator
+    {
+        /// @cond DEV
+        friend class Object;
+        /// @endcond
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Default constructor (null)
+        ///
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        iterator()
+        {
+            Index = 0;
+            SQ_PTRS->sq_resetobject(&Key);
+            SQ_PTRS->sq_resetobject(&Value);
+            Key._type = OT_NULL;
+            Value._type = OT_NULL;
+        }
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Returns the string value of the key the iterator is on if possible
+        ///
+        /// \return String or NULL
+        ///
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        const SQChar* getName() { return SQ_PTRS->sq_objtostring(&Key); }
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Gets the Squirrel object for the key the iterator is on
+        ///
+        /// \return HSQOBJECT representing a key
+        ///
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        HSQOBJECT getKey() { return Key; }
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Gets the Squirrel object for the value the iterator is on
+        ///
+        /// \return HSQOBJECT representing a value
+        ///
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        HSQOBJECT getValue() { return Value; }
+    private:
+
+        HSQOBJECT Key;
+        HSQOBJECT Value;
+        SQInteger Index;
     };
+
+    bool next(iterator& iter) const
+    {
+        SQ_PTRS->sq_pushobject(vm,obj);
+        SQ_PTRS->sq_pushinteger(vm,iter.Index);
+        if(SQ_SUCCEEDED(SQ_PTRS->sq_next(vm,-2)))
+        {
+            SQ_PTRS->sq_getstackobj(vm,-1,&iter.Value);
+            SQ_PTRS->sq_getstackobj(vm,-2,&iter.Key);
+            SQ_PTRS->sq_getinteger(vm,-3,&iter.Index);
+            SQ_PTRS->sq_pop(vm,4);
+            return true;
+        }
+        else
+        {
+            SQ_PTRS->sq_pop(vm,2);
+            return false;
+        }
+    }
+};
+
 }
 
 #endif

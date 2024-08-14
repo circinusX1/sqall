@@ -27,6 +27,6 @@ add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
     ${PROJECT_BINARY_DIR}/${LIB_FILENAME}
-    ../../bin/${LIB_FILENAME}
+    ${PROJECT_SOURCE_DIR}/../../bin/${LIB_FILENAME}
 )
 

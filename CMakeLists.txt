@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(sq_all LANGUAGES CXX)
+project(sqall LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,7 +12,7 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR}/simplesquirrel/include
     ${CMAKE_CURRENT_SOURCE_DIR}/simplesquirrel/libs/squirrel/include
     ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(sq_all
+add_executable(sqall
     main.cpp
     simplesquirrel/source/args.cpp simplesquirrel/source/array.cpp
     simplesquirrel/source/function.cpp
@@ -23,9 +23,7 @@ add_executable(sq_all
     simplesquirrel/source/table.cpp
     simplesquirrel/source/instance.cpp
     simplesquirrel/source/script.cpp
-
     simplesquirrel/source/sq_module.cpp
-    bin/example_functions.nut
     bin/system.js
     simplesquirrel/include/simplesquirrel/sq_module.hpp
     simplesquirrel/include/simplesquirrel/object.hpp
@@ -43,9 +41,11 @@ add_executable(sq_all
     simplesquirrel/include/simplesquirrel/array.hpp
     simplesquirrel/include/simplesquirrel/vm.hpp
     simplesquirrel/include/simplesquirrel/simplesquirrel.hpp
+    bin/nano.js bin/nano_screen.js
+    bin/make.js
 )
-set(BIN_NAME sq_all)
-target_link_libraries(sq_all -L${CMAKE_CURRENT_SOURCE_DIR}/simplesquirrel/libs
+set(BIN_NAME sqall)
+target_link_libraries(sqall -L${CMAKE_CURRENT_SOURCE_DIR}/simplesquirrel/libs
     -lsquirrel_static
     -lsqstdlib_static)
 
