@@ -38,20 +38,17 @@ void directory_iterator(const ssq::Function& f, const std::string& dir)
     }
 }
 
-ssq::Array ls(const ssq::Table& vars, const std::string& filter)
+std::string ls(const std::string& path, const std::string& filter)
 {
     char lwd[4096];
-    std::string path = vars.get<std::string>((const char*)"PWD");
+
     std::string sss;
-    ssq::Array  a(PVM->getHandle());
+    std::string ret;
 
-
-    if(path.empty())
-        path="./";
 
     if(::access(path.c_str(),0)!=0)
     {
-        return a;
+        return ret;
     }
     std::string scwd = ::getcwd(lwd,4095);
     chdir(path.c_str());
@@ -78,7 +75,8 @@ ssq::Array ls(const ssq::Table& vars, const std::string& filter)
             //}
             if(sss.find(filter) != -1)
             {
-                a.push(sss);
+                 ret.append(sss);
+                 ret.append(" ");
             }
         }
         catch(std::regex_error& e)
@@ -88,7 +86,7 @@ ssq::Array ls(const ssq::Table& vars, const std::string& filter)
     }
     chdir(scwd.c_str());
 
-    return a;
+    return ret;
 }
 
 std::string current_path()
@@ -107,7 +105,7 @@ size_t file_size(const char* file)
     return -1;
 }
 
-void aprint(ssq::Array arr)
+void aprint(const ssq::Array& arr)
 {
     size_t l =  arr.size();
     for(size_t idx = 0; idx < l ;idx++)
@@ -118,7 +116,7 @@ void aprint(ssq::Array arr)
     std::cout << "\n";
 }
 
-void tprint(ssq::Table tbl)
+void tprint(const ssq::Table& tbl)
 {
     ssq::Object::iterator it;
     while(tbl.next(it))
@@ -129,6 +127,12 @@ void tprint(ssq::Table tbl)
         {
             std::string sname = SQ_PTRS->sq_objtostring(&value);
             std::cout << name << "=" << sname << "\n";
+        }
+        else if(_RAW_TYPE(value._type)==_RT_ARRAY)
+        {
+            ssq::Object obj(value, PVM->getHandle());
+            ssq::Array  arr = obj.toArray();
+            aprint(arr);
         }
     }
 }
@@ -191,18 +195,22 @@ ssq::Array compile(const ssq::Table& env, const std::string& compiler)
     std::string cc = env.get<std::string>(compiler.c_str());
     std::string sflags = compiler + "_FLAGS";
     std::string ccflags = env.get<std::string>(sflags.c_str());
+    std::string includes = env.get<std::string>("INCLUDES");
 
     std::string prefix_cmd = "cd "; prefix_cmd += wd + "; ";
     prefix_cmd += cc + " ";
     prefix_cmd += ccflags + " ";
+    prefix_cmd += includes + " ";
 
 
     ssq::Object::iterator i;
-    ssq::Object           afiles = env.get<ssq::Object>("FILES");
-    ssq::Array            arr = afiles.toArray();
-    for(size_t i=0; i< arr.size(); i++)
+    std::string           afiles = env.get<std::string>("FILES");
+    std::vector<std::string> vfiles;
+    ::split_str(afiles,' ', vfiles);
+
+    for(size_t i=0; i< vfiles.size(); i++)
     {
-        std::string f = arr.get<std::string>(i);
+        std::string f = vfiles[i];
         std::string ofile = f;
         size_t dotpos = f.find_last_of(".");
         if(dotpos != std::string::npos)
@@ -236,36 +244,34 @@ std::string linker(const ssq::Table& env,
     std::string prefix_cmd = "cd "; prefix_cmd += wd + "; ";
     prefix_cmd += cc + " ";
 
+    ssq::Object::iterator i;
+    for(size_t i=0; i< objs.size(); i++)
+    {
+        std::string f = objs.get<std::string>(i);
+        prefix_cmd += f;
+        prefix_cmd += " ";
+    }
+
     std::vector<std::string> aflags;
     split_str(ccflags,' ',aflags);
     prefix_cmd += " ";
     for(const auto& a: aflags)
     {
-        if(a=="-o")continue;
         prefix_cmd += a;
+        if(a=="-o"){
+            prefix_cmd += " ";
+            prefix_cmd += env.get<std::string>("ELF");
+        }
         prefix_cmd += " ";
     }
+    prefix_cmd += env.get<std::string>((const char*)"LIBS");
+    prefix_cmd += " ";
 
-    std::string exec = prefix_cmd;
-    ssq::Object::iterator i;
-    for(size_t i=0; i< objs.size(); i++)
-    {
-        std::string f = objs.get<std::string>(i);
-        exec += f;
-        exec += " ";
-    }
-    exec += " ";
-    for(const auto& a: aflags)
-    {
-        if(a!="-o")continue;
-        exec += a;
-        exec += " ";
-        break;
-    }
-    exec += env.get<std::string>("ELF");
+
+
     int err;
-    std::cout << "\n" << exec << "\n";
-    return ::proc(exec.c_str(), err);
+    std::cout << "\n" << prefix_cmd << "\n";
+    return ::proc(prefix_cmd.c_str(), err);
 }
 
 
@@ -275,7 +281,7 @@ bool _init_apis(ssq::VM* pvm, sq_api* ptrs)
     SQ_PTRS = ptrs;
     pvm->addFunc("directory_iterator",directory_iterator);
     pvm->addFunc("ls",ls);
-    pvm->addFunc("current_path",current_path);
+    pvm->addFunc("pwd",current_path);
     pvm->addFunc("file_size",file_size);
     pvm->addFunc("compile",compile);
     pvm->addFunc("link",linker);

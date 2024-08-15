@@ -11,6 +11,8 @@ Variables::Variables(const std::string& appname){
     vars_["CC"]="gcc";
     vars_["CXX"]="g++";
     vars_["AR"]="ar";
+    vars_["INCLUDES"]="";
+    vars_["LIBS"]="";
     vars_["PREFIX"]="";
     vars_["FILES"]="";
     vars_["PATH"]=std::getenv("PATH");
