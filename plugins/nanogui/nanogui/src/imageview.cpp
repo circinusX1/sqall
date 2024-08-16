@@ -61,6 +61,10 @@ ImageView::ImageView(Widget* parent, GLuint imageID)
     mShader.bind();
     mShader.uploadIndices(indices);
     mShader.uploadAttrib("vertex", vertices);
+
+    Eigen::Matrix<float,3,3> color;
+    color <<1,1,1,1,1,1,1,1,1;
+    mShader.uploadAttrib("aColor", color);
 }
 
 ImageView::~ImageView() {

@@ -24,7 +24,6 @@ add_executable(sqall
     simplesquirrel/source/instance.cpp
     simplesquirrel/source/script.cpp
     simplesquirrel/source/sq_module.cpp
-    bin/system.js
     simplesquirrel/include/simplesquirrel/sq_module.hpp
     simplesquirrel/include/simplesquirrel/object.hpp
     simplesquirrel/include/simplesquirrel/args.hpp
@@ -41,8 +40,8 @@ add_executable(sqall
     simplesquirrel/include/simplesquirrel/array.hpp
     simplesquirrel/include/simplesquirrel/vm.hpp
     simplesquirrel/include/simplesquirrel/simplesquirrel.hpp
-    bin/nano.js bin/nano_screen.js
     bin/make.js
+    bin/make2.js
 )
 set(BIN_NAME sqall)
 target_link_libraries(sqall -L${CMAKE_CURRENT_SOURCE_DIR}/simplesquirrel/libs

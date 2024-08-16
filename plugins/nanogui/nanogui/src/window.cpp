@@ -53,7 +53,7 @@ void Window::performLayout(NVGcontext *ctx) {
         mButtonPanel->setVisible(false);
         Widget::performLayout(ctx);
         for (auto w : mButtonPanel->children()) {
-            w->setFixedSize(Vector2i(22, 22));
+            w-> setFixedSize(Vector2i(22, 22));
             w->setFontSize(15);
         }
         mButtonPanel->setVisible(true);

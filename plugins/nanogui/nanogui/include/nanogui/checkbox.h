@@ -30,6 +30,13 @@ NAMESPACE_BEGIN(nanogui)
  */
 class NANOGUI_EXPORT CheckBox : public Widget {
 public:
+
+    enum E_STATE{
+        eNormal=0,
+        eDown,
+        eFocused,
+        eDisabled
+    };
     /**
      * Adds a CheckBox to the specified ``parent``.
      *
@@ -64,7 +71,7 @@ public:
     const bool &pushed() const { return mPushed; }
 
     /// Sets whether or not this CheckBox is currently pushed.  See \ref nanogui::CheckBox::mPushed.
-    void setPushed(const bool &pushed) { mPushed = pushed; }
+    void setState(const bool &pushed) { mPushed = pushed; }
 
     /// Returns the current callback of this CheckBox.
     std::function<void(CheckBox*,bool)> callback() const { return mCallback; }

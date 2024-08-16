@@ -14,6 +14,9 @@ sq_api*     SQ_PTRS;
 namespace   ng=nanogui ;
 static      ng::Screen* PScreen;
 
+
+void _recursize(Cbdler::Node* p, ng::Widget* parent);
+
 namespace Sqrat
 {
 SQVM* vm = nullptr;
@@ -52,6 +55,7 @@ static void _attributes(const Cbdler::Node& p, T* w)
     if(t.count()==2)
     {
         w->setSize(ng::Vector2i(t.ivalue(0),t.ivalue(1)));
+        w->setFixedSize(ng::Vector2i(t.ivalue(0),t.ivalue(1)));
     }
     else
     {
@@ -109,7 +113,7 @@ static void _exattributes(const Cbdler::Node& p, T* w)
 
         GLTexture* texture = new GLTexture(src);
         auto data = texture->load(src);
-        int tex[4]={texture->texture(),0,0,0};
+        GLuint tex[4]={texture->texture(),0,0,0};
         w->setImage(tex, ng::Vector2i(texture->w(), texture->h()));
         w->setSize(ng::Vector2i(texture->w(), texture->h()));
         w->setFixedSize(ng::Vector2i(texture->w(), texture->h()));
@@ -120,7 +124,7 @@ static void _exattributes(const Cbdler::Node& p, T* w)
         {
             GLTexture* texture = new GLTexture(src);
             auto data = texture->load(src);
-            int tex[4]={0,texture->texture(),0,0};
+            GLuint tex[4]={0,texture->texture(),0,0};
             w->setImage(tex, ng::Vector2i(texture->w(), texture->h()));
             w->setUserData("GLTexture2", texture);
         }
@@ -348,6 +352,8 @@ void _recursize(Cbdler::Node* p, ng::Widget* parent)
 {
     if(p->values().size())
     {
+        std::cout << p->nv() << "\n";
+
         if(p->nv() == "screen")
         {
             parent = _screen(*p);
@@ -374,8 +380,10 @@ void _recursize(Cbdler::Node* p, ng::Widget* parent)
         }
         for(const auto& a : p->values())
         {
+            std::cout << a->key() << "\n";
             if(a->key()=="screen" ||
                 a->key()=="widget" ||
+                a->key().find("layout")!=std::string::npos ||
                 a->key()=="window" ||
                 a->key()=="button" ||
                 a->key()=="image" ||

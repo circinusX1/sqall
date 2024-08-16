@@ -8,7 +8,7 @@
 
 namespace ssq {
     Table::Table():Object() {
-            
+
     }
 
     Table::Table(const Object& object):Object(object) {
@@ -23,11 +23,11 @@ namespace ssq {
     }
 
     Table::Table(const Table& other):Object(other) {
-            
+
     }
 
     Table::Table(Table&& other) NOEXCEPT :Object(std::forward<Table>(other)) {
-            
+
     }
 
     Function Table::findFunc(const char* name) const {
@@ -48,6 +48,15 @@ namespace ssq {
         SQ_PTRS->sq_newslot(vm, -3, false);
         SQ_PTRS->sq_pop(vm,1); // pop table
         return std::move(table);
+    }
+
+    void Table::addTable(const Table& table, const char* name) {
+        SQ_PTRS->sq_pushobject(vm, obj);
+        SQ_PTRS->sq_pushstring(vm, name, strlen(name));
+        detail::push<Object>(vm, table);
+        SQ_PTRS->sq_newslot(vm, -3, false);
+        SQ_PTRS->sq_pop(vm,1); // pop table
+        return ;
     }
 
     size_t Table::size() {

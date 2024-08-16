@@ -80,7 +80,7 @@ public:
     void setIcon(int icon) { mIcon = icon; }
 
     /// Sets the icon of this Button.  See \ref nanogui::Button::mIcon.
-    void setImage(int icon[4], const nanogui::Vector2i& s);//mImageSize
+    void setImage(GLuint icon[4], const nanogui::Vector2i& s);//mImageSize
 
 
     /// The current flags of this Button (see \ref nanogui::Button::Flags for options).

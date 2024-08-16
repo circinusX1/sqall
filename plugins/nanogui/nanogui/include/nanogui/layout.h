@@ -68,6 +68,9 @@ public:
      */
     virtual Vector2i preferredSize(NVGcontext *ctx, const Widget *widget) const = 0;
 
+    void drawLayoutBorder(NVGcontext* ctx, const Theme* t, const Vector2i& pos, const Vector2i& size) const;
+
+
     /// Default destructor (exists for inheritance).
     virtual ~Layout() { }
 protected:

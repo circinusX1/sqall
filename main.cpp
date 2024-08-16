@@ -17,6 +17,36 @@ static bool loadapi(const std::string&  lib);
 thread_local ssq::VM* PVM;
 static std::vector<void*>  _dlls;
 
+
+int run(const std::string& file)
+{
+    if(PVM)
+    {
+        try {
+            // Compile script and run it
+            ssq::Script script = PVM->compileFile(file.c_str());
+
+            PVM->run(script);
+        }
+        catch (ssq::CompileException& e) {
+            std::cerr << "Failed to run file: " << e.what() << std::endl;
+            return -1;
+        } catch (ssq::TypeException& e) {
+            std::cerr << "Something went wrong passing objects: " << e.what() << std::endl;
+            return -1;
+        } catch (ssq::RuntimeException& e) {
+            std::cerr << "Something went wrong during execution: " << e.what() << std::endl;
+            return -1;
+        } catch (ssq::NotFoundException& e) {
+            std::cerr << e.what() << std::endl;
+            return -1;
+        }
+
+    }
+    return 0;
+}
+
+
 int main(int argc, char* argv[]) {
     std::string   scrfile;
 
@@ -39,6 +69,7 @@ int main(int argc, char* argv[]) {
         ssq::Script script = PVM->compileFile(scrfile.c_str());
 
         PVM->addFunc("load", loadapi);
+        PVM->addFunc("run", run);
 
         PVM->run(script);
 
@@ -50,7 +81,7 @@ int main(int argc, char* argv[]) {
 
         if(!main.isNull())
         {
-            PVM->callFunc(main, PVM->getHandle(), a);
+            PVM->callFunc(main, PVM->getHandle(), PVM, a);
         }
 
     } catch (ssq::CompileException& e) {
@@ -73,10 +104,12 @@ static void  add_dll(void* p){_dlls.push_back(p);}
 
 bool loadapi(const std::string&  lib)
 {
+    char full[1000];
+
+    ::strcpy(full, lib.c_str()) ;
     void* module  = ::dlopen(lib.c_str(), RTLD_NOW | RTLD_LOCAL | RTLD_NOLOAD);
     if (module == nullptr)
     {
-        char full[1000];
         char dir[500];
 
         ::getcwd(dir,499);
@@ -84,30 +117,42 @@ bool loadapi(const std::string&  lib)
         if(::access(full,0)==0)
         {
             module = ::dlopen(full, RTLD_NOW | RTLD_LOCAL);
-            if (module == nullptr)
+        }
+        if (module == nullptr)
+        {
+            std::cout << "err 2" << dlerror() << "\n";
+            const char* pld = std::getenv("LD_LIBRARY_PATH");
+            if(pld)
             {
-                std::cerr << "cannot load library: " << lib << " " << dlerror() << "\n";
-                return false;
+                ::sprintf(full,"%s/%s",pld,lib.c_str());
+                if(::access(full,0)==0)
+                {
+                    module = ::dlopen(full, RTLD_NOW | RTLD_LOCAL);
+                }
             }
         }
-        else
-        {
-            std::cerr << "No such file: " << lib << "\n";
-        }
     }
-
-    api_pfn_t startmod = (api_pfn_t)::dlsym(module, "_init_apis");
-    if (startmod == nullptr)
+    if(module)
     {
-        std::cerr << "cannot load _init_apis" << __FUNCTION__ << dlerror() << "\n";
-        ::dlclose(module);
-        module = nullptr;
-        return false;
-    }
-    ::add_dll(module);
+        api_pfn_t startmod = (api_pfn_t)::dlsym(module, "_init_apis");
+        if (startmod == nullptr)
+        {
+            std::cerr << "cannot load _init_apis" << __FUNCTION__ << dlerror() << "\n";
+            ::dlclose(module);
+            module = nullptr;
+            return false;
+        }
+        ::add_dll(module);
 #ifdef TRACE
-    printf("vm=%p\n",_psq->theVM());
+        printf("vm=%p\n",_psq->theVM());
 #endif
-    return startmod(PVM, SQ_PTRS);
+        return startmod(PVM, SQ_PTRS);
+    }
+    else
+    {
+        std::cout << "err final" << dlerror() << "\n";
+        std::cerr << "cannot load library " << full <<  "\n";
+    }
+    return false;
 }
 

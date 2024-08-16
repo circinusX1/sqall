@@ -5,11 +5,11 @@
 #include <map>
 #include "simplesquirrel/simplesquirrel.hpp"
 
-class Variables
+class Env
 {
 public:
-    Variables(const std::string& appname);
-    ~Variables(){}
+    Env(const std::string& appname);
+    ~Env(){}
 
     ssq::Table get();
     std::string get(const std::string& key);

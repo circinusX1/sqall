@@ -112,7 +112,7 @@ bool Button::mouseButtonEvent(const Vector2i &p, int button, bool down, int modi
     return false;
 }
 
-void Button::setImage(int icon[4],const nanogui::Vector2i& s)
+void Button::setImage(GLuint icon[4],const nanogui::Vector2i& s)
 {
     mImageSize = s;
     if(icon[0]) mImage[0] = icon[0];
@@ -135,12 +135,15 @@ void Button::setImage(int icon[4],const nanogui::Vector2i& s)
         mShader.bind();
         mShader.uploadIndices(indices);
         mShader.uploadAttrib("vertex", vertices);
+
+        Eigen::Matrix<float,3,3> color;
+        color << 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9;
+        mShader.uploadAttrib("aColor", color);
     }
 }
 
 void Button::draw(NVGcontext *ctx) {
     Widget::draw(ctx);
-
 
     NVGcolor gradTop = mTheme->mButtonGradientTopUnfocused;
     NVGcolor gradBot = mTheme->mButtonGradientBotUnfocused;
@@ -265,14 +268,33 @@ void Button::draw(NVGcontext *ctx) {
         Vector2f positionAfterOffset = positionInScreen + mOffset;
         Vector2f imagePosition = positionAfterOffset.cwiseQuotient(screenSize);
         glEnable(GL_SCISSOR_TEST);
+        glBindTexture(GL_TEXTURE_2D, mImage[mPushed]);
+        glActiveTexture(GL_TEXTURE0);
+
         float r = screen->pixelRatio();
         glScissor(positionInScreen.x() * r,
                   (screenSize.y() - positionInScreen.y() - size().y()) * r,
                   size().x() * r, size().y() * r);
         mShader.bind();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, mImage[mPushed]);
-        mShader.setUniform("image", 0);
+
+
+        //mEnabled
+
+        //glBindTexture(GL_TEXTURE_2D, mImage[mPushed]);
+
+        if(mMouseFocus)
+        {
+            Eigen::Matrix<float,3,3> color;
+            color << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+            mShader.uploadAttrib("aColor", color);
+        }
+        else
+        {
+            Eigen::Matrix<float,3,3> color;
+            color << 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9;
+            mShader.uploadAttrib("aColor", color);
+        }
+
         mShader.setUniform("scaleFactor", scaleFactor);
         mShader.setUniform("position", imagePosition);
         mShader.drawIndexed(GL_TRIANGLES, 0, 2);
@@ -282,7 +304,12 @@ void Button::draw(NVGcontext *ctx) {
     nvgFontSize(ctx, fontSize);
     nvgFontFace(ctx, "sans-bold");
     nvgTextAlign(ctx, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-    nvgFillColor(ctx, mTheme->mTextColorShadow);
+
+    if(mMouseFocus)
+        nvgFillColor(ctx, mTheme->mTextColor);
+    else
+        nvgFillColor(ctx, mTheme->mTextColorShadow);
+
     nvgText(ctx, textPos.x(), textPos.y(), mCaption.c_str(), nullptr);
     nvgFillColor(ctx, textColor);
     nvgText(ctx, textPos.x(), textPos.y() + 1, mCaption.c_str(), nullptr);

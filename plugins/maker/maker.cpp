@@ -13,6 +13,7 @@ namespace   fs = std::filesystem;
 ssq::VM*    PVM;
 sq_api*     SQ_PTRS;
 static      std::string WorkDir;
+static      std::string PrevDir;
 static      char TempBuff[4096];
 
 void directory_iterator(const ssq::Function& f, const std::string& dir)
@@ -38,20 +39,20 @@ void directory_iterator(const ssq::Function& f, const std::string& dir)
     }
 }
 
-std::string ls(const std::string& path, const std::string& filter)
+std::string ls(const ssq::Table& env, const std::string& filter)
 {
     char lwd[4096];
 
     std::string sss;
     std::string ret;
+    std::string srcdir = env.get<std::string>((const char*)"SRC_DIR");
 
-
-    if(::access(path.c_str(),0)!=0)
+    if(::access(srcdir.c_str(),0)!=0)
     {
         return ret;
     }
     std::string scwd = ::getcwd(lwd,4095);
-    chdir(path.c_str());
+    chdir(srcdir.c_str());
 
     for (const auto & entry : std::filesystem::directory_iterator("./"))
     {
@@ -191,7 +192,9 @@ DONE:
 ssq::Array compile(const ssq::Table& env, const std::string& compiler)
 {
     ssq::Array a(PVM->getHandle());
-    std::string wd = env.get<std::string>((const char*)"PWD");
+
+    std::string cd = current_path();
+    std::string wd = env.get<std::string>((const char*)"SRC_DIR");
     std::string cc = env.get<std::string>(compiler.c_str());
     std::string sflags = compiler + "_FLAGS";
     std::string ccflags = env.get<std::string>(sflags.c_str());
@@ -199,18 +202,37 @@ ssq::Array compile(const ssq::Table& env, const std::string& compiler)
 
     std::string prefix_cmd = "cd "; prefix_cmd += wd + "; ";
     prefix_cmd += cc + " ";
-    prefix_cmd += ccflags + " ";
     prefix_cmd += includes + " ";
 
+    std::vector<std::string> aflgs;
+    ::split_str(ccflags,' ', aflgs);
+
+
+    // -c at end
+    for(const auto& a : aflgs)
+    {
+        if(a=="-c")continue;
+        prefix_cmd += a + " ";
+    }
+    for(const auto& a : aflgs)
+    {
+        if(a!="-c")continue;
+        prefix_cmd += a;
+        prefix_cmd += " ";
+        break;
+    }
 
     ssq::Object::iterator i;
     std::string           afiles = env.get<std::string>("FILES");
     std::vector<std::string> vfiles;
     ::split_str(afiles,' ', vfiles);
 
-    for(size_t i=0; i< vfiles.size(); i++)
+    std::cout << "PWD: " << getcwd(TempBuff,sizeof(TempBuff)) << "\n";
+
+    for(size_t i=0; i < vfiles.size(); i++)
     {
         std::string f = vfiles[i];
+        if(f.empty())   continue;
         std::string ofile = f;
         size_t dotpos = f.find_last_of(".");
         if(dotpos != std::string::npos)
@@ -218,8 +240,8 @@ ssq::Array compile(const ssq::Table& env, const std::string& compiler)
             ofile = f.substr(0,dotpos) + ".o";
         }
         std::string exec = prefix_cmd;
-        exec += f;
-        std::cout << exec << "\n";
+        exec += f +" ";
+        std::cout << "COMPILE: " << exec << "\n";
         int ec;
         ::proc(exec.c_str(),ec);
         if(ec!=0)
@@ -227,6 +249,7 @@ ssq::Array compile(const ssq::Table& env, const std::string& compiler)
             break;
         }
         a.push(ofile);
+        ::chdir(cd.c_str());
     }
     return a;
 }
@@ -236,10 +259,13 @@ std::string linker(const ssq::Table& env,
                     const std::string& compiler)
 {
     ssq::Array a(PVM->getHandle());
-    std::string wd = env.get<std::string>((const char*)"PWD");
+    std::string wd = env.get<std::string>((const char*)"SRC_DIR");
     std::string cc = env.get<std::string>(compiler.c_str());
     std::string sflags = compiler + "_LINKER_FLAGS";
     std::string ccflags = env.get<std::string>(sflags.c_str());
+    std::string cd = current_path();
+
+
 
     std::string prefix_cmd = "cd "; prefix_cmd += wd + "; ";
     prefix_cmd += cc + " ";
@@ -252,6 +278,7 @@ std::string linker(const ssq::Table& env,
         prefix_cmd += " ";
     }
 
+    std::cout << "PWD: " << getcwd(TempBuff,sizeof(TempBuff)) << "\n";
     std::vector<std::string> aflags;
     split_str(ccflags,' ',aflags);
     prefix_cmd += " ";
@@ -260,6 +287,10 @@ std::string linker(const ssq::Table& env,
         prefix_cmd += a;
         if(a=="-o"){
             prefix_cmd += " ";
+            std::string odir = current_path() + "/" + env.get<std::string>("OUT_DIR");
+            std::filesystem::create_directories(odir);
+            prefix_cmd += odir;
+            prefix_cmd += "/";
             prefix_cmd += env.get<std::string>("ELF");
         }
         prefix_cmd += " ";
@@ -268,10 +299,11 @@ std::string linker(const ssq::Table& env,
     prefix_cmd += " ";
 
 
-
     int err;
-    std::cout << "\n" << prefix_cmd << "\n";
-    return ::proc(prefix_cmd.c_str(), err);
+    std::cout << "LINK: " << "\n" << prefix_cmd << "\n";
+    std::string ret =  ::proc(prefix_cmd.c_str(), err);
+    ::chdir(cd.c_str());
+    return ret;
 }
 
 
@@ -287,7 +319,13 @@ bool _init_apis(ssq::VM* pvm, sq_api* ptrs)
     pvm->addFunc("link",linker);
     pvm->addFunc("aprint",aprint);
     pvm->addFunc("tprint",tprint);
+    pvm->addFunc("pushd",[](const std::string& dir){
+        PrevDir = ::getcwd(TempBuff,sizeof(TempBuff));
+        ::chdir(dir.c_str()); WorkDir=dir;
+    });
+    pvm->addFunc("popd",[](){::chdir(PrevDir.c_str()); WorkDir=PrevDir; });
     pvm->addFunc("chdir",[](const std::string& dir){::chdir(dir.c_str()); WorkDir=dir; });
+
     pvm->addFunc("rm",[](const std::string& fls){
         std::string cmd ;
         if(!WorkDir.empty()){
@@ -299,18 +337,25 @@ bool _init_apis(ssq::VM* pvm, sq_api* ptrs)
         ::proc(cmd.c_str(), ec);
     });
 
-    //auto cls = pvm->addClass("Variables",ssq::Class::Ctor<Variables()>());
-    auto cls = pvm->addClass("Variables", [](std::string appname) -> Variables* {
-            return new Variables(appname);
+    //auto cls = pvm->addClass("Env",ssq::Class::Ctor<Env()>());
+    auto cls = pvm->addClass("ENV", [](std::string appname) -> Env* {
+            std::cout << "Creating ENV \n";
+            return new Env(appname);
         });
 
-    cls.addFunc("at", [](Variables* self, const std::string& k) -> std::string {
+    cls.addFunc("at", [](Env* self, const std::string& k) -> std::string {
         return self->get(k);
     });
 
-    cls.addFunc("get", [](Variables* self) -> ssq::Table {
+    cls.addFunc("get", [](Env* self) -> ssq::Table {
         return self->get();
     });
+
+    //
+    ssq::Table t(pvm->getHandle());
+    t.set("SOME",std::string("sdfasdf"));
+    pvm->addTable(t, "CUSTOM");
+
 
     return false;
 }

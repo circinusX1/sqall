@@ -29,15 +29,15 @@ Widget::Widget(Widget *parent)
         parent->addChild(this);
 }
 
-
 Widget::Widget()
     : mParent(nullptr), mTheme(nullptr), mLayout(nullptr),
       mPos(Vector2i::Zero()), mSize(Vector2i::Zero()),
       mFixedSize(Vector2i::Zero()), mVisible(true), mEnabled(true),
       mFocused(false), mMouseFocus(false), mTooltip(""), mFontSize(-1.0f),
       mIconExtraScale(1.0f), mCursor(Cursor::Arrow) {
-      ;
 }
+
+
 
 Widget::~Widget() {
     for (auto child : mChildren) {

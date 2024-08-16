@@ -54,9 +54,12 @@ constexpr char const *const defaultImageViewVertexShader =
     uniform vec2 scaleFactor;
     uniform vec2 position;
     in vec2 vertex;
+    in vec3 aColor;
     out vec2 uv;
+    out vec3 ourColor;
     void main() {
         uv = vertex;
+        ourColor = aColor;
         vec2 scaledVertex = (vertex * scaleFactor) + position;
         gl_Position  = vec4(2.0*scaledVertex.x - 1.0,
                             1.0 - 2.0*scaledVertex.y,
@@ -67,10 +70,11 @@ constexpr char const *const defaultImageViewVertexShader =
 constexpr char const *const defaultImageViewFragmentShader =
     R"(#version 330
     uniform sampler2D image;
+    in vec3 ourColor;
     out vec4 color;
     in vec2 uv;
     void main() {
-        color = texture(image, uv);
+        color = texture(image, uv)  * vec4(ourColor, 1.0);
     })";
 
 /**
@@ -100,9 +104,7 @@ public:
     /// Return the used \ref Layout generator
     const Layout *layout() const { return mLayout.get(); }
     /// Set the used \ref Layout generator
-    void setLayout(Layout *layout) {
-        mLayout = layout;
-    }
+    void setLayout(Layout *layout) { mLayout = layout; }
 
     /// Return the \ref Theme used to draw this widget
     Theme *theme() { return mTheme; }

@@ -5,7 +5,7 @@
 
 extern ssq::VM*    PVM;
 
-Variables::Variables(const std::string& appname){
+Env::Env(const std::string& appname){
     int ec;
     vars_["ELF"]=appname;
     vars_["CC"]="gcc";
@@ -16,7 +16,9 @@ Variables::Variables(const std::string& appname){
     vars_["PREFIX"]="";
     vars_["FILES"]="";
     vars_["PATH"]=std::getenv("PATH");
-    vars_["PWD"]= std::filesystem::current_path();
+    vars_["CUR_DIR"] = std::filesystem::current_path();
+    vars_["SRC_DIR"] = "";
+    vars_["OUT_DIR"] = "";
     vars_["USER"]=std::getenv("USER");
     vars_["CC_FLAGS"]="-c ";
     vars_["CXX_FLAGS"]="-c ";
@@ -26,20 +28,22 @@ Variables::Variables(const std::string& appname){
     while(pn.back()=='\n'||pn.back()=='\r')
         pn.pop_back();
     vars_["ARCH"]=pn;
+    std::cout << __FUNCTION__ <<"ctor \n";
 }
 
 
-ssq::Table Variables::get()
+ssq::Table Env::get()
 {
     ssq::Table tbl(PVM->getHandle());
     for(const auto& a : vars_)
     {
         tbl.set<std::string>(a.first.c_str(), a.second);
     }
+    std::cout << __FUNCTION__ <<" called \n";
     return tbl;
 }
 
-std::string Variables::get(const std::string& key)
+std::string Env::get(const std::string& key)
 {
     const auto a = vars_.find(key);
     if(a != vars_.end())
